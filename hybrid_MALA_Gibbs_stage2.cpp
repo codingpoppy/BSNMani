@@ -12,7 +12,6 @@ using namespace std;
 // [[Rcpp::export]]
 double t2_new(const double& t2_A, const double& t2_B, const mat& C, const mat& Z, const mat& Lambda_flat_beta, const mat& Z_alpha){
   mat C_res = C-Lambda_flat_beta-Z_alpha;
-  //cout << accu(C_res%C_res) << endl;
   double new_t2 = 1.0/randg<double>(distr_param(t2_A, 2.0/(t2_B+accu(C_res%C_res))));
   return new_t2;
 };
@@ -87,7 +86,7 @@ struct g2_comp_par{
   double t2_beta_B;
   double t2_alpha_A;
   double t2_alpha_B;
-  mat C_mat; //repmat(C,1,W_dim)
+  mat C_mat; 
 };
 
 double gibbs_t2(const g2_comp_par& comp_par, const g2_dat& dat, const vec& beta, const mat& Lambda_flat_beta, const mat& Z_alpha){
@@ -206,7 +205,8 @@ List g2_updates(d_paras& d0, double& t2_0, double& t2_beta_0, double& t2_alpha_0
     paras.t2_beta = t2_beta_0;
     paras.t2_alpha = t2_alpha_0;
 
-    update_dat_llk(paras, dat, comp); //update data llk
+    //update data llk
+    update_dat_llk(paras, dat, comp); 
 
     // collect samples
     d_list.col(0) = paras.d.d;
@@ -219,16 +219,16 @@ List g2_updates(d_paras& d0, double& t2_0, double& t2_beta_0, double& t2_alpha_0
       // update parameter
       update_Lambda(paras, dat, iter);
       if(!d_fixed[0]){
-        update_d(paras, comp, dat); //d[iter]
+        update_d(paras, comp, dat); 
       }
       if(!t2_fixed[0]){
-        update_t2(comp, dat, paras); //t2[iter]
+        update_t2(comp, dat, paras);
       }
       if(!t2_beta_fixed[0]){
-        update_t2_beta(paras, comp); //t2_beta[iter]
+        update_t2_beta(paras, comp);
       }
       if(!t2_alpha_fixed[0]){
-        update_t2_alpha(paras, comp); //t2_alpha[iter]
+        update_t2_alpha(paras, comp);
       }
 
       d_list.col(iter) = paras.d.d;
@@ -237,7 +237,8 @@ List g2_updates(d_paras& d0, double& t2_0, double& t2_beta_0, double& t2_alpha_0
       t2_alpha_list[iter] = paras.t2_alpha;
       Lambda_flat_list.slice(iter) = paras.Lambda;
 
-      update_dat_llk(paras, dat, comp); // data llk
+      // data llk
+      update_dat_llk(paras, dat, comp); 
       dat_llk_list[iter] = paras.llk;
     }
   }
@@ -263,16 +264,14 @@ List g2(vec& beta_0, vec& alpha_0, double& t2_0, double& t2_beta_0, double& t2_a
   dat.q = q;
   dat.r = r;
   dat.Lambda_flat_cube = Lambda_flat_cube;
-  std::cout<< "break 1" << std::endl;
   dat.rho0 = rho0;
-  std::cout<< "break 2" << std::endl;
   dat.psi20 = psi20;
   dat.gamma0 = gamma0;
   dat.kappa20 = kappa20;
   dat.omega0 = omega0;
   dat.phi20 = phi20;
 
-  // build hybrid computational paramerters
+  // build hybrid computational parameters
   g2_comp_par comp;
   comp.t2_A = (rho0+M)/2.0;
   comp.t2_B = rho0*psi20;
@@ -289,9 +288,7 @@ List g2(vec& beta_0, vec& alpha_0, double& t2_0, double& t2_beta_0, double& t2_a
   vec d0_d(q+r);
   d0.d = d0_d;
   d0.d.subvec(0,q-1) = beta_0;
-  std::cout<< "beta" << std::endl;
   d0.d.subvec(q,q+r-1) = alpha_0;
-  std::cout<< "alpha" << std::endl;
   d0.beta = beta_0;
   d0.alpha = alpha_0;
   d0.Z_alpha = Z*alpha_0;

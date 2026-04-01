@@ -10,6 +10,7 @@ prior_X = function(X){
 prior_s2 = function(s2,nu0,s20){
   return((-1-nu0/2)*log(s2) - 0.5*nu0*s20/s2) # s2
 }
+
 ## X, U
 ### param (vec(X: nxq),vec(Lambda: Mxq),alpha,beta,s2,t2)
 joint_pos = function(param, t2_lambda, nu0, s20, conn_flat_full, # M x (n*n)
@@ -41,7 +42,7 @@ fn_X_optim = function(param, t2_lambda, nu0, s20, conn_flat_full, M, N, q){
 }
 
 ################# try profile llk
-Lambda_cls = function(U, conn_arr, M, q){  ###MLE of lambda wrt llk(Y|~)
+Lambda_cls = function(U, conn_arr, M, q){  ### MLE of lambda wrt llk(Y|~)
   res = matrix(NA,M,q)
   for(i in 1:M){
     tmp = t(U) %*% conn_arr[,,i] %*% U
@@ -72,7 +73,6 @@ joint_pos_prof = function(param, t2_lambda, nu0, s20, conn_arr, conn_flat_full, 
   dat_llk = Y_llk_new(t(conn_flat_full), U, t(U), t(Lambda_mat), s2, M, N)
   p_lambda = 0
   for(i in 1:M){
-    #lambda_i = vec_lambda[((i-1)*q+1):(i*q)]
     lambda_i = Lambda_mat[i,]
     p_lambda = p_lambda + prior_lambda_i(lambda_i, t2_lambda, q)
   }
@@ -126,9 +126,7 @@ gr_optim = function(vec_lambda, X, s2, t2_lambda, nu0, s20, conn_arr, M, N, q){
   gr_lambda = matrix(NA, M, q)
   for(i in 1:M){
     lambda_i = Lambda_mat[i,]
-    #print(lambda_i)
     gr_lambda[i,] = gr_prior_lambda_i(lambda_i,t2_lambda) + gr_dat$d_lambda[i,]
-    #print(gr_lambda[i,])
   }
   return(list(gr_X = gr_X, gr_lambda = gr_lambda, gr_s2 = gr_s2))
 }

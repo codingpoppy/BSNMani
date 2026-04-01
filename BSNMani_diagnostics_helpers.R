@@ -17,7 +17,6 @@ geodesic_dist = function(X,Y,clip=FALSE){
   # Singular value decomposition to find cosines of the principal angles
   svd_result = svd(cos_theta_matrix)
   cos_thetas = svd_result$d
-  #print(cos_thetas)
   
   # Ensure the values are within the correct range before applying acos
   if(clip){
@@ -47,24 +46,17 @@ gelman.diag.v2 = function (x, autoburnin = TRUE){
   Nvar <- nvar(x)
   xnames <- varnames(x)
   x <- lapply(x, as.matrix)
-  #S2 <- array(sapply(x, var, simplify = TRUE), dim = c(Nvar, Nvar, Nchain))
-  #W <- apply(S2, c(1, 2), mean)
   xbar <- matrix(sapply(x, apply, 2, mean, simplify = TRUE), nrow = Nvar, ncol = Nchain)
-  #B <- Niter * var(t(xbar))
-  
-  #w <- diag(W)
-  #b <- diag(B)
+
   b = Niter * apply(t(xbar),2,var)
   s2 = sapply(x,FUN=function(y){apply(y,2,var)},simplify=TRUE)
   w = rowMeans(s2)
-  # s2 <- matrix(apply(S2, 3, diag), nrow = Nvar, ncol = Nchain)
   muhat <- apply(xbar, 1, mean)
   var.w <- apply(s2, 1, var)/Nchain
   var.b <- (2 * b^2)/(Nchain - 1)
   var_1 = sapply(1:Nvar,FUN=function(i){var(t(s2)[,i],t(xbar^2)[,i])})
   var_2 = sapply(1:Nvar,FUN=function(i){var(t(s2)[,i],t(xbar)[,i])})
   cov.wb <- (Niter/Nchain) * (var_1 - 2 * muhat * var_2)
-  #cov.wb <- (Niter/Nchain) * diag(var(t(s2), t(xbar^2)) - 2 * muhat * var(t(s2), t(xbar)))
   V <- (Niter - 1) * w/Niter + (1 + 1/Nchain) * b/Niter
   var.V <- ((Niter - 1)^2 * var.w + (1 + 1/Nchain)^2 * var.b + 2 * (Niter - 1) * (1 + 1/Nchain) * cov.wb)/Niter^2
   df.V <- (2 * V^2)/var.V
@@ -89,7 +81,7 @@ gelman.diag.v2 = function (x, autoburnin = TRUE){
 #    --$ par 2 ...
 #  --$ stepsize
 
-combine_epochs = function(mcmc_res_ls_1, mcmc_res_ls_2){ ## mcmc_res_ls_2 must come after mcmc_res_ls_1
+combine_epochs = function(mcmc_res_ls_1, mcmc_res_ls_2){ 
   res = list()
   res$stepsize = mcmc_res_ls_2$stepsize
   res$runtime = mcmc_res_ls_1$runtime + mcmc_res_ls_2$runtime
@@ -110,8 +102,6 @@ combine_epochs = function(mcmc_res_ls_1, mcmc_res_ls_2){ ## mcmc_res_ls_2 must c
   return(res)
 }
 
-# save as a list of parameters values, each element is a list of length(#chains)
-# dat: M, N, q, Y_flat_full, n_samps, n_burnin, n_chains
 gather_samples = function(mcmc_res_ls,dat,pars,var_df,sign_flip=TRUE){
   samps_ls = list()
   q = dat$q
@@ -213,11 +203,6 @@ Rhat = function(samps_subset, auto.burn=FALSE, ret_ls=FALSE){
 Rhat.v2 = function(samps_subset, auto.burn=FALSE){
   Rhat_ls = lapply(samps_subset,FUN=function(x){gelman.diag.v2(mcmc.list(x),autoburnin=auto.burn)})
   return(Rhat_ls)
-  #Rhat_conv = sapply(Rhat_ls, FUN=function(x){mean(x$psrf[,1])})
-  #Rhat_df = data.frame(par = names(samps_subset), mean = Rhat_conv)
-  #if(ret_ls){
-  #  return(Rhat_ls)
-  #}else{return(Rhat_df)}  
 }
 
 ess = function(samps_subset){
@@ -290,7 +275,6 @@ subnetwork_heatmap = function(idx_ref, U, N, q, col.side, col.heat){
   borders = borders[-length(borders)]
   borders = borders
 
-  #par(mfrow=c(ceiling(q/2),2),mai=c(0.3,0.3,0.3,0.3))
   for(i in 1:q){
     subnet_q = U_arrange[,i,drop=FALSE] %*% t(U_arrange[,i,drop=FALSE])
     heatmap.2(subnet_q, col=col.heat, scale="none",dendrogram='none',main=paste(i),lhei=c(2,5),

@@ -44,7 +44,6 @@ mat box_prod_2(const mat& A, const mat& B, const int& m1, const int& n1, const i
   idx_mat.reshape(n2,n1);
   uvec idx_vec = vectorise(idx_mat.t());
   mat res = kron(A,B);
-  //std::cout<<size(res)<<std::endl;
   return res.cols(idx_vec);
 };
 
@@ -57,7 +56,7 @@ mat compute_d_UtYU(const mat& U, const mat& Ut, const cube& Y, const int& M, con
   return res;
 };
 
-// compute log(w_r * h(x_r)); compatible with logsumexp
+// compute log(w_r * h(x_r));
 // [[Rcpp::export]]
 vec compute_wh(const int& M, const int& N, const int& q, const double& s2, const mat& d_UtYU, const double& eta0, const double& t20, const vec& SGI_nodes, const vec& SGI_wts, const bool& weighted){
   vec h_Theta_Y_p1(SGI_wts.n_elem);
@@ -76,15 +75,12 @@ vec compute_wh(const int& M, const int& N, const int& q, const double& s2, const
 
 // [[Rcpp::export]]
 double eval_log_l_Theta_Y(const vec& wh_vec, const int& M, const int& N, const double& s2, const double& accu_YY, const mat& X, const double& nu0, const double& s20){
-  // log_l_Theta_Y
-  //double res = -0.25*M*N*(N+1)*log(s2)-0.5/s2*accu_YY+log(sum(exp(wh_vec - max(wh_vec))))+max(wh_vec)-0.5*accu(X%X)+(1-nu0/2.0)*log(s2)-0.5*nu0*s20/s2;
   double res = -0.25*M*N*(N+1)*log(s2)-0.5/s2*accu_YY+log(sum(exp(wh_vec - max(wh_vec))))+max(wh_vec)-0.5*accu(X%X)-(1+nu0/2.0)*log(s2)-0.5*nu0*s20/s2;
   return res;
 };
 
 // [[Rcpp::export]]
 vec eval_d_log_h_s2(const int& M, const int& q, const double& s2, const mat& d_UtYU, const vec& SGI_nodes, const bool& weighted){
-  // d_log_h_Theta_Y_s2
   vec nodes_t2_lambda = SGI_nodes;
   if(weighted){
     nodes_t2_lambda = exp(nodes_t2_lambda);
@@ -95,7 +91,6 @@ vec eval_d_log_h_s2(const int& M, const int& q, const double& s2, const mat& d_U
   vec eval_d_log_h_Theta_Y_s2_p2 = 0.5*(2*s2/nodes_t2_lambda+1)/(pow(s2,2)*pow(s2/nodes_t2_lambda+1,2));
 
   vec res = eval_d_log_h_Theta_Y_s2_p1 - eval_d_log_h_Theta_Y_s2_p2*accu(d_UtYU%d_UtYU);
-  //vec res = eval_d_log_h_Theta_Y_s2_p1;
   return res;
 };
 
@@ -113,11 +108,8 @@ double eval_d_log_l_s2(const vec& wh_vec, const double& nu0, const double& s20, 
 
   // d_log_l_Theta_Y_s2
   double res = (-1-nu0/2.0-0.25*M*N*(N+1))/s2 + 0.5/(pow(s2,2))*(nu0*s20+accu_YY);
-  //std::cout<<res<<std::endl;
   vec wh_vec_a = wh_vec + log(eval_d_log_h_Theta_Y_s2_p1);
-  //std::cout<<wh_vec_a<<std::endl;
   vec wh_vec_b = wh_vec + log(eval_d_log_h_Theta_Y_s2_p2);
-  //std::cout<<wh_vec_b<<std::endl;
   res += exp(log(sum(exp(wh_vec_a - max(wh_vec_a))))+max(wh_vec_a) - log(sum(exp(wh_vec - max(wh_vec))))-max(wh_vec));
   res -= exp(log(sum(exp(wh_vec_b - max(wh_vec_b))))+max(wh_vec_b) - log(sum(exp(wh_vec - max(wh_vec))))-max(wh_vec)) * accu(d_UtYU%d_UtYU);
   return res;
@@ -189,7 +181,6 @@ vec eval_d_log_l_X(const vec& wh_vec, const vec& SGI_nodes, const bool& weighted
   }
 
   rowvec res = vectorise(-1.0*X).as_row();
-  //res += sum(wh_vec % (2/(pow(s2,2))/(1.0/s2+1.0/nodes_t2_lambda)))*reshape(sum(UY_diag_sum.t())*dU_X,N,q)/sum(wh_vec);
   vec wh_vec_wt = wh_vec + log((2/(pow(s2,2))/(1.0/s2+1.0/nodes_t2_lambda)));
   res += exp(log(sum(exp(wh_vec_wt - max(wh_vec_wt))))+max(wh_vec_wt) - log(sum(exp(wh_vec - max(wh_vec))))-max(wh_vec)) * sum(UY_diag_sum.t())*dU_X;
   return res.as_col();
@@ -268,11 +259,9 @@ uvec box_prod_3(const int& n1, const int& n2){
 // [[Rcpp::export]]
 mat eval_dlog_mat_norm_2_new(const mat& X, const mat& U, const mat& Ut, const mat& I_q, const mat& dSdX, const mat& I_Nq, const mat& I_N, const mat& Lambda_flat, const mat& Lambda_flat_t, const cube& Y, const int& q2, const int& Nq,
                          const uvec& box_idx, const mat& I_q_flat, const double& s2, const int& N, const int& q, const int& M){
-  //mat Ut = U.t();
   mat S = X.t();
   mat P = solve(S*X,I_q);
   mat R = sqrtmat_sympd(P);
-  //mat Lambda_flat_t = Lambda_flat.t();
 
   mat UtkI_q = kron(Ut,I_q);
   mat Lambda_i, Y_i, UtYi;
@@ -288,7 +277,6 @@ mat eval_dlog_mat_norm_2_new(const mat& X, const mat& U, const mat& Ut, const ma
 
   mat res_temp = UtkI_q*res_temp_1 + kron(I_q,res_temp_2);
   mat res = -1.0*S + trans(reshape(I_q_flat*1.0/s2*res_temp*(kron(R,I_N) + kron(I_q,X)*solve(kron(R,I_q)+kron(I_q,R),eye(q2,q2))*kron(P,-1.0*P)*(kron(S,I_q)*dSdX+kron(I_q,S))), N, q));
-  //rowvec res = vectorise(-1.0*X).as_row() + I_q_flat*1.0/s2*res_temp*(kron(R,I_N) + kron(I_q,X)*solve(kron(R,I_q)+kron(I_q,R),eye(q2,q2))*kron(P,-1.0*P)*(kron(S,I_q)*dSdX+kron(I_q,S)));
 
   return res;
 };
@@ -296,14 +284,13 @@ mat eval_dlog_mat_norm_2_new(const mat& X, const mat& U, const mat& Ut, const ma
 //[[Rcpp::export]]
 vec subnetwork_region(const mat& U, const mat& Ut, const uvec& region_select, const uvec& upper_idx){
   mat subnet = U.rows(region_select)*Ut.cols(region_select);
-  //std::cout<<subnet<<std::endl;
   vec res = subnet(upper_idx);
   return res;
 }
 
 // data structure
 struct hybrid_dat{
-  // data; hyperparameters
+  // data; hyper-parameters
   cube Y; // N x N x M
   int M; // population size
   int N; // # roi
@@ -438,7 +425,6 @@ mat test_reshape(const vec& X_vec, const int& n_rows, const int& n_cols){
 mat test_X_update(const mat& current_X, const vec& dpi, const vec& T, const double& w){
   vec update = w*w/2.0*dpi + w*T;
   mat res(current_X.n_rows, current_X.n_cols);
-  //res = trans(current_X.t() + trans(reshape(update.subvec(0,current_X.n_elem-1),current_X.n_rows,current_X.n_cols))); //match numerator layout
   res = current_X + reshape(update.subvec(0,current_X.n_elem-1),current_X.n_rows,current_X.n_cols);
   return res;
 }
@@ -449,7 +435,7 @@ double test_s2_update(const double& current_s2, const double& dpi, const double&
   return res;
 }
 
-void update_MALA(hybrid_paras& paras){// if  h < min{1,xxx}
+void update_MALA(hybrid_paras& paras){
   // current value of X (X_l)
   mat X_tmp = paras.MALA_par.X;
   double s2_tmp = paras.MALA_par.s2;
@@ -460,7 +446,6 @@ void update_MALA(hybrid_paras& paras){// if  h < min{1,xxx}
   // update
   vec update = paras.w*paras.w/2.0*paras.dpi + paras.w*T;
   if(!paras.U_fix){
-    //paras.MALA_par.X = trans(X_tmp.t() + trans(reshape(update.subvec(0,X_tmp.n_elem-1),X_tmp.n_rows,X_tmp.n_cols))); //match numerator layout
     paras.MALA_par.X = X_tmp + reshape(update.subvec(0,X_tmp.n_elem-1),X_tmp.n_rows,X_tmp.n_cols); //match numerator layout
     paras.MALA_par.U = polar_expansion(paras.MALA_par.X);
     paras.MALA_par.Ut = paras.MALA_par.U.t();
@@ -515,15 +500,12 @@ List test_MALA_one_step(const mat& X_n, const double& s2_n, const vec& log_dpi_n
   vec dpi = eval_dpi_check(wh_vec, s2, d_UtYU, U, X, SGI_nodes, weighted, Y, M, N, q, I_N, I_q, dSdX, q*q, nu0, s20, accu(Y%Y));
 
   vec diff(Nq+1, fill::zeros);
-  //diff.subvec(0,Nq-1) = vectorise(trans(X - X_n));
   diff.subvec(0,Nq-1) = vectorise(X - X_n);
   diff[Nq] = s2 - s2_n;
 
-  // compute −|(|Z−X_l−w^2 ∇logπ_X (X_l )/2|)|^2/2w^2  (p_Xn)
   vec p_Xn_vec = diff - w*w*log_dpi_n/2.0;
   double p_Xn = -1.0*accu(p_Xn_vec%p_Xn_vec)/(2.0*w*w);
 
-  // compute −|(|X_l−Z−w^2 ∇logπ_X (Z)/2|)|^2/2w^2  (p_Z)
   vec p_Z_vec = -1.0*diff - w*w*dpi/2.0;
   double p_Z = -1.0*accu(p_Z_vec%p_Z_vec)/(2.0*w*w);
 
@@ -553,7 +535,6 @@ bool MALA_one_step(hybrid_paras& paras,hybrid_dat& dat, hybrid_comp_par& comp){
   update_dpi(paras, dat, comp);
 
   vec diff(Nq+1, fill::zeros);
-  //diff.subvec(0,Nq-1) = vectorise(trans(paras.MALA_par.X - X_n));
   diff.subvec(0,Nq-1) = vectorise(paras.MALA_par.X - X_n);
   diff[Nq] = paras.MALA_par.s2 - s2_n;
 
@@ -567,7 +548,6 @@ bool MALA_one_step(hybrid_paras& paras,hybrid_dat& dat, hybrid_comp_par& comp){
 
   // decide whether or not to update
   double log_unif = log(R::runif(0,1));
-  //double thres = paras.pi - log_pi_Xn + p_Xn - p_Z;
   double thres = paras.pi - log_pi_n - p_Xn + p_Z;
   if(log_unif<thres){
     return true;
@@ -589,7 +569,6 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
   int k_MALA=0; //track MALA step
   int k_Gibbs=0; //track Gibbs step
 
-  //cout << "initialize parameters \n";
   // Tracking Gibbs Updates
   cube Lambda_flat_list=zeros<cube>(dat.M, dat.q, mcmc_sample/Gibbs_step);
   vec t2_lambda_list = zeros<vec>(mcmc_sample/Gibbs_step);
@@ -602,7 +581,6 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
   mat llk_grad_list = zeros<mat>(dat.N*dat.q+1, mcmc_sample/MALA_step);
   vec dat_llk_list = zeros<vec>(mcmc_sample);
   mat subnet_list = zeros<mat>((dat.region_select.n_elem)*(dat.region_select.n_elem-1)/2,mcmc_sample);
-  std::cout << size(subnet_list) << std::endl;
 
   if(mcmc_sample>0){
     // initialize
@@ -622,12 +600,8 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
     update_pi(paras, dat, comp); //log_pi()
     update_dpi(paras, dat, comp);//dlog_pi()
     update_dat_llk(paras, dat, comp); //update data llk
-    std::cout << "here 1" << std::endl;
     update_subnet(paras, dat, comp); //update select subnetwork
-    std::cout << "here 2" << std::endl;
 
-    //double current_pi=paras.pi;
-    //mat current_dpi=paras.dpi_2;
     double current_pi;
     mat current_dpi;
     mat current_d_UtYU;
@@ -650,8 +624,6 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
     U_list.slice(0) = paras.MALA_par.U;
     X_list.slice(0) = paras.MALA_par.X;
 
-    //std::cout<< "initialized" << std::endl;
-
     for(int iter=0;iter<mcmc_sample;iter++){
       // update parameter
       if((iter+1)%Gibbs_step==0){
@@ -659,20 +631,19 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
           update_Lambda_Y(paras, dat);
         }
         if(!paras.t2_lambda_fix){
-          update_t2_lambda(paras, comp); //t2_lambda[iter]
+          update_t2_lambda(paras, comp);
         }
         Lambda_flat_list.slice(k_Gibbs) = paras.Lambda.Lambda_flat;
         t2_lambda_list[k_Gibbs] = paras.t2_lambda;
         k_Gibbs++;
       }
 
-      //std::cout << "g1-2 done" << std::endl;
-      current_U=paras.MALA_par.U; //U[iter-1]
-      current_Ut=paras.MALA_par.Ut; //U[iter-1]
-      current_X=paras.MALA_par.X; //X[iter-1]
-      current_s2=paras.MALA_par.s2; //s2[iter-1]
-      current_pi=paras.pi; //pi(X[iter-1], U[iter-1], s2[iter-1])
-      current_dpi=paras.dpi; //dpi(X[iter-1], U[iter-1], s2[iter-1])
+      current_U=paras.MALA_par.U; 
+      current_Ut=paras.MALA_par.Ut; 
+      current_X=paras.MALA_par.X; 
+      current_s2=paras.MALA_par.s2; 
+      current_pi=paras.pi; 
+      current_dpi=paras.dpi; 
       current_d_UtYU=paras.MALA_par.d_UtYU;
       current_wh_vec = paras.MALA_par.wh_vec;
 
@@ -681,7 +652,7 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
         if(!paras.U_fix | !paras.s2_fix){
           if(k < acpt_iters){
             acpt_rate(k,0) = iter+1;
-            acpt_rate(k,1) = acpt_ct*1.0/acpt_step;///MALA_step;
+            acpt_rate(k,1) = acpt_ct*1.0/acpt_step;
             if(tune){
               paras.w = adjust_acceptance(acpt_rate(k,1),paras.w,target_acpt); //improper update 03/21/22
              }
@@ -695,10 +666,7 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
       // update U with MALA
       if((iter+1)%MALA_step==0){
         if(!paras.U_fix | !paras.s2_fix){
-          //MALA = MALA_one_step(paras,dat,comp);
-          //std::cout << "MALA pre" << std::endl;
           if(MALA_one_step(paras,dat,comp)){ // if accept the new X value
-            //std::cout << "MALA accept" << std::endl;
             // 05/17/22 sign flip
             U_neg = -1.0*paras.MALA_par.U;
             current_diff = sum(square(current_U - paras.MALA_par.U),0);
@@ -715,13 +683,11 @@ List hybrid_MALA_g1_updates(MALA_paras& MALA0, Lambda_paras& Lambda0, double& t2
               paras.MALA_par.Ut = U_flipped.t();
               update_d_UtYU(paras, dat);
               update_wh(paras,dat);
-              update_pi(paras, dat, comp); //pi(X[iter], U_flipped[iter], s2[iter])
-              update_dpi(paras, dat, comp); //dpi(X[iter], U_flipped[iter], s2[iter])
+              update_pi(paras, dat, comp); 
+              update_dpi(paras, dat, comp); 
             }
             acpt_ct++;
-            //cout << paras.pi << endl;
           }else{// if not accept
-            //std::cout<< "MALA reject" << std::endl;
             paras.MALA_par.U=current_U;
             paras.MALA_par.Ut=current_Ut;
             paras.MALA_par.X=current_X;
@@ -788,7 +754,6 @@ List hybrid_MALA_g1(mat& X_0, mat& Lambda_0_flat, double& s2_0, double& t2_lambd
   mat Y_i;
   for(int i=0; i<M; i++){
     Y_i = Y.slice(i);
-    //Y_flat_mat.col(i) = Y_i(comp.Y_tril_ind);
     Y_flat_mat.col(i) = vectorise(Y_i);
   }
   comp.Y_flat = Y_flat_mat;
@@ -834,10 +799,6 @@ List hybrid_MALA_g1(mat& X_0, mat& Lambda_0_flat, double& s2_0, double& t2_lambd
   paras.s2_fix = s2_fixed[0];
   paras.Lambda_fix = lambda_fixed[0];
   paras.t2_lambda_fix = t2_lambda_fixed[0];
-  std::cout<< "U is fixed " << paras.U_fix <<std::endl;
-  std::cout<< "s2 is fixed " <<paras.s2_fix <<std::endl;
-  std::cout<< "Lambda is fixed " << paras.Lambda_fix <<std::endl;
-  std::cout<< "t2_lambda is fixed " << paras.t2_lambda_fix <<std::endl;
 
   //run hybrid
   List hybrid_update_list = hybrid_MALA_g1_updates(MALA0_st, Lambda_par0, t2_lambda_0, paras, dat, comp, mcmc_sample, stepsize, acpt_step,
